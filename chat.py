@@ -7,7 +7,7 @@ model1_path = '../model/LLM-Research/Meta-Llama-3___1-8B-Instruct'
 lora1_path = './output/llama3_1_instruct_lora/checkpoint-720'  # 第一个模型的 LoRA 权重路径
 
 model2_path = '../model/LLM-Research/Meta-Llama-3___1-8B-Instruct'
-lora2_path = './output/llama3_1_instruct_lora_baoyu/checkpoint-174'  # 第二个模型的 LoRA 权重路径
+lora2_path = './output/llama3_1_instruct_lora_baoyu/checkpoint-1740'  # 第二个模型的 LoRA 权重路径
 
 # 加载 tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model1_path, trust_remote_code=True)
@@ -61,52 +61,60 @@ def generate_response(model, tokenizer, prompt, role, device):
 
 def main():
     """
-    主函数，让两个模型互相聊天
+    主函数，让两个模型互相聊天，并将对话保存到 output.txt
     """
     print("欢迎使用双模型对话系统！输入 '退出' 结束对话。")
-    
-    # 初始提示
-    initial_prompt = "好久不见"
-    print(f"初始提示：{initial_prompt}")
 
-    # 设置对话轮次
-    max_turns = 10
-    current_turn = 0
+    # 打开文件，用于保存对话
+    with open("output.txt", "w", encoding="utf-8") as f:
+        # 初始提示
+        initial_prompt = "好久不见"
+        print(f"初始提示：{initial_prompt}")
+        f.write(f"初始提示：{initial_prompt}\n")
 
-    # 设置角色
-    role1 = "红楼梦的角色--林黛玉"
-    role2 = "红楼梦的角色--贾宝玉"
+        # 设置对话轮次
+        max_turns = 100
+        current_turn = 0
 
-    # 初始化对话
-    prompt = initial_prompt
+        # 设置角色
+        role1 = "红楼梦的角色--林黛玉"
+        role2 = "红楼梦的角色--贾宝玉"
 
-    while current_turn < max_turns:
-        # 模型1生成回复（使用 GPU 0）
-        response1 = generate_response(model1, tokenizer, prompt, role1, device="cuda:0")
-        print(f"{role1}：{response1}")
+        # 初始化对话
+        prompt = initial_prompt
 
-        # 检查是否达到停止条件
-        if "退出" in response1.lower() or "exit" in response1.lower() or "quit" in response1.lower():
-            print("对话结束，再见！")
-            break
+        while current_turn < max_turns:
+            # 模型1生成回复（使用 GPU 0）
+            response1 = generate_response(model1, tokenizer, prompt, role1, device="cuda:0")
+            # print(f"{role1}：{response1}")
+            f.write(f"{role1}：{response1}\n")
 
-        # 模型2生成回复（使用 GPU 1）
-        response2 = generate_response(model2, tokenizer, response1, role2, device="cuda:1")
-        print(f"{role2}：{response2}")
+            # 检查是否达到停止条件
+            if "退出" in response1.lower() or "exit" in response1.lower() or "quit" in response1.lower():
+                print("对话结束，再见！")
+                f.write("对话结束，再见！\n")
+                break
 
-        # 检查是否达到停止条件
-        if "退出" in response2.lower() or "exit" in response2.lower() or "quit" in response2.lower():
-            print("对话结束，再见！")
-            break
+            # 模型2生成回复（使用 GPU 1）
+            response2 = generate_response(model2, tokenizer, response1, role2, device="cuda:1")
+            # print(f"{role2}：{response2}")
+            f.write(f"{role2}：{response2}\n")
 
-        # 更新 prompt 为模型2的回复，以便下一轮对话
-        prompt = response2
+            # 检查是否达到停止条件
+            if "退出" in response2.lower() or "exit" in response2.lower() or "quit" in response2.lower():
+                print("对话结束，再见！")
+                f.write("对话结束，再见！\n")
+                break
 
-        # 增加对话轮次
-        current_turn += 1
+            # 更新 prompt 为模型2的回复，以便下一轮对话
+            prompt = response2
 
-    if current_turn >= max_turns:
-        print(f"已达到最大对话轮次 {max_turns}，对话结束。")
+            # 增加对话轮次
+            current_turn += 1
+
+        if current_turn >= max_turns:
+            print(f"已达到最大对话轮次 {max_turns}，对话结束。")
+            f.write(f"已达到最大对话轮次 {max_turns}，对话结束。\n")
 
 if __name__ == "__main__":
     main()
